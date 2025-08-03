@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Clone — Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #d6e6f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-box {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-box h2 { margin-bottom: 20px; text-align: center; }
+    .login-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 16px;
+      background: #0088cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .login-box button:hover { background: #0072a8; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Вход</h2>
+    <input type="text" id="phone" placeholder="Введите номер телефона">
+    <input type="password" id="password" placeholder="Пароль">
+    <button onclick="login()">Войти</button>
+  </div>
+
+  <script>
+    const users = {
+      '998901234567': { password: '1234', name: 'Ga' },
+      '998911112233': { password: 'abcd', name: 'Ж' },
+      '998977776655': { password: 'pass', name: 'Gщ4' }
+    };
+
+    function login() {
+      const phone = document.getElementById('phone').value.trim();
+      const pass = document.getElementById('password').value.trim();
+
+      if (users[phone] && users[phone].password === pass) {
+        localStorage.setItem('loggedInUser', JSON.stringify(users[phone]));
+        window.location.href = 'chat.html';
+      } else {
+        alert('Неверный номер или пароль');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(120deg, #e0f7fa, #e1bee7);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: #0088cc;
+      color: white;
+      padding: 15px;
+      font-size: 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+    #gearBtn {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: white;
+      cursor: pointer;
+    }
+    #profileInfo {
+      position: absolute;
+      left: 15px;
+      top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #profileInfo .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+    }
+    #profileModal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+    #profileModal input {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    #profileModal button {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    #chat-box {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(5px);
+    }
+    .message {
+      background: #fff;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      max-width: 70%;
+      position: relative;
+      word-break: break-word;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .me {
+      background: #dcf8c6;
+      align-self: flex-end;
+    }
+    .other {
+      background: #fff;
+      align-self: flex-start;
+    }
+    .message button {
+      position: absolute;
+      top: 5px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .edit-btn {
+      right: 30px;
+      color: #555;
+    }
+    .delete-btn {
+      right: 5px;
+      color: red;
+    }
+    #form {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    #sendBtn {
+      margin-left: 10px;
+      padding: 10px 20px;
+      background: #0088cc;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    #sendBtn:hover {
+      background: #0072a8;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Telegram Chat
+    <div id="profileInfo">
+      <div class="avatar" id="profileAvatar"></div>
+      <span id="profileName"></span>
+    </div>
+    <button id="gearBtn">⚙️</button>
+  </header>
+
+  <div id="profileModal">
+    <input type="text" id="nickname" placeholder="Введите ник">
+    <input type="text" id="avatarURL" placeholder="URL аватарки">
+    <button onclick="saveProfile()">Сохранить</button>
+    <button onclick="toggleModal(false)">Отмена</button>
+  </div>
+
+  <div id="chat-box"></div>
+
+  <form id="form" onsubmit="sendMessage(event)">
+    <input id="messageInput" placeholder="Введите сообщение..." required />
+    <button id="sendBtn">Отправить</button>
+  </form>
+
+  <script>
+    const modal = document.getElementById("profileModal");
+    const gearBtn = document.getElementById("gearBtn");
+    const nicknameInput = document.getElementById("nickname");
+    const avatarInput = document.getElementById("avatarURL");
+    const chatBox = document.getElementById("chat-box");
+    const form = document.getElementById("form");
+    const messageInput = document.getElementById("messageInput");
+
+    const profileName = document.getElementById("profileName");
+    const profileAvatar = document.getElementById("profileAvatar");
+
+    let userId = localStorage.getItem("userId") || crypto.randomUUID();
+    localStorage.setItem("userId", userId);
+
+    let nickname = localStorage.getItem("nickname") || "Аноним";
+    let avatar = localStorage.getItem("avatar") || "https://www.gravatar.com/avatar?d=mp";
+
+    let messages = [];
+    try {
+      messages = JSON.parse(localStorage.getItem("messages")) || [];
+    } catch (e) {
+      console.error("Ошибка при чтении сообщений из localStorage:", e);
+      messages = [];
+    }
+
+    gearBtn.onclick = () => toggleModal(true);
+
+    function toggleModal(show) {
+      modal.style.display = show ? "flex" : "none";
+      if (show) {
+        nicknameInput.value = nickname;
+        avatarInput.value = avatar;
+      }
+    }
+
+    function saveProfile() {
+      nickname = nicknameInput.value || "Аноним";
+      avatar = avatarInput.value || "https://www.gravatar.com/avatar?d=mp";
+      localStorage.setItem("nickname", nickname);
+      localStorage.setItem("avatar", avatar);
+      updateProfileHeader();
+      toggleModal(false);
+    }
+
+    function updateProfileHeader() {
+      profileName.textContent = nickname;
+      profileAvatar.style.backgroundImage = `url('${avatar}')`;
+    }
+
+    function saveMessages() {
+      try {
+        localStorage.setItem("messages", JSON.stringify(messages));
+      } catch (e) {
+        console.error("Ошибка при сохранении в localStorage:", e);
+      }
+    }
+
+    function renderMessages() {
+      chatBox.innerHTML = "";
+      messages.forEach((msg, index) => {
+        const div = document.createElement("div");
+        div.className = msg.userId === userId ? "message me" : "message other";
+        div.innerHTML = `
+          <div class="avatar" style="background-image: url('${msg.avatar}')"></div>
+          <div>
+            <strong>${msg.nickname}</strong><br>
+            <span class="msg-text">${msg.text}</span>
+          </div>
+          ${msg.userId === userId ? `
+            <button class="edit-btn" onclick="editMessage(${index})">✏️</button>
+            <button class="delete-btn" onclick="deleteMessage(${index})">🗑️</button>
+          ` : ""}
+        `;
+        chatBox.appendChild(div);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage(event) {
+      event.preventDefault();
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      const msg = { userId, nickname, avatar, text };
+      messages.push(msg);
+      saveMessages();
+      renderMessages();
+      messageInput.value = "";
+    }
+
+    function deleteMessage(index) {
+      messages.splice(index, 1);
+      saveMessages();
+      renderMessages();
+    }
+
+    function editMessage(index) {
+      const newText = prompt("Изменить сообщение:", messages[index].text);
+      if (newText !== null && newText.trim() !== "") {
+        messages[index].text = newText.trim();
+        saveMessages();
+        renderMessages();
+      }
+    }
+
+    updateProfileHeader();
+    renderMessages();
+  </script>
+</body>
+</html>
